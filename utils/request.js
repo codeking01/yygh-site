@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { MessageBox, Message } from 'element-ui'
+import cookie from 'js-cookie'
+
 // 创建axios实例
 const service = axios.create({
   baseURL: 'http://localhost',
@@ -9,6 +11,11 @@ const service = axios.create({
 service.interceptors.request.use(
   config => {
     // token 先不处理，后续使用时在完善
+    //判断cookie是否有token值
+    if(cookie.get('token')) {
+      //token值放到cookie里面
+      config.headers['token']=cookie.get('token')
+    }
     return config
   },
   err => {

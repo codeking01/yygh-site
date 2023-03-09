@@ -132,8 +132,16 @@ export default {
     },
 
     schedule(depcode) {
-      window.location.href = '/hospital/schedule?hoscode=' + this.hoscode + "&depcode="+ depcode
-    }
+      // 登录判断
+      let token = cookie.get('token')
+      if (!token) {
+        // 在layout下的myheader里面定义全局事件
+        loginEvent.$emit('loginDialogEvent')
+        return
+      }
+      window.location.href = '/hospital/schedule?hoscode=' + this.hospital.hoscode + "&depcode="+ depcode
+    },
+
   }
 }
 </script>
