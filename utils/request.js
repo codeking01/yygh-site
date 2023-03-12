@@ -5,7 +5,7 @@ import cookie from 'js-cookie'
 // 创建axios实例
 const service = axios.create({
   baseURL: 'http://localhost',
-  timeout: 15000 // 请求超时时间
+  timeout: 150000 // 请求超时时间
 })
 // http request 拦截器
 service.interceptors.request.use(
@@ -24,16 +24,29 @@ service.interceptors.request.use(
 // http response 拦截器
 service.interceptors.response.use(
   response => {
-    if (response.data.code !== 200) {
-      Message({
-        message: response.data.message,
-        type: 'error',
-        duration: 5 * 1000
-      })
-      return Promise.reject(response.data)
+    //状态码是208，后端网关做了校验
+    if(response.data.code === 208) {
+      console.log("未登录，请登录....")
+      //弹出登录输入框
+      loginEvent.$emit('loginDialogEvent')
+      return
     } else {
-      return response.data
+      // console.log("数据状态..")
+      if (response.data.code !== 200) {
+        // console.log("数据不正常....")
+        console.log("当前数据是：",response.data)
+        Message({
+          message: response.data.message,
+          type: 'error',
+          duration: 5 * 1000
+        })
+        return Promise.reject(response.data)
+      } else {
+        // console.log("数据正常....")
+        return response.data
+      }
     }
+
   },
   error => {
     return Promise.reject(error.response)
