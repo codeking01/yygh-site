@@ -4,7 +4,9 @@
       <!-- logo -->
       <div class="left-wrapper v-link selected">
         <img style="width: 50px" width="50" height="50" src="~assets/images/logo.png">
-        <span class="text">尚医通 预约挂号统一平台</span>
+        <span class="text">
+        <a href="/" target="_self" style="text-decoration: none"> 尚医通 预约挂号统一平台</a>
+        </span>
       </div>
       <!-- 搜索框 -->
       <div class="search-wrapper">
@@ -24,21 +26,26 @@
       <!-- 右侧 -->
       <div class="right-wrapper">
         <span class="v-link clickable">帮助中心</span>
-        <el-dropdown>
-                      <span class="el-dropdown-link">
-                        晴天<i class="el-icon-arrow-down el-icon--right"></i>
-                      </span>
+        <span v-if="name == ''"  class="v-link clickable" @click="showLogin()" id="loginDialog">登录/注册</span>
+        <el-dropdown v-if="name != ''" @command="loginMenu">
+            <span class="el-dropdown-link">
+<!--                        晴天<i class="el-icon-arrow-down el-icon&#45;&#45;right"></i>-->
+              {{ name }}<i class="el-icon-arrow-down el-icon--right"></i>
+            </span>
           <el-dropdown-menu class="user-name-wrapper" slot="dropdown">
-            <el-dropdown-item>挂号订单</el-dropdown-item>
-            <el-dropdown-item>就诊人管理</el-dropdown-item>
-            <el-dropdown-item divided>退出登录</el-dropdown-item>
+            <el-dropdown-item command="/user">实名认证</el-dropdown-item>
+            <el-dropdown-item command="/order">挂号订单</el-dropdown-item>
+            <el-dropdown-item command="/patient">就诊人管理</el-dropdown-item>
+            <el-dropdown-item command="/logout" divided>退出登录</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
-        <span class="v-link clickable" @click="dialogUserFormVisible = true">登录/注册</span>
+<!--        <span v-if="name == ''"  class="v-link clickable" @click="dialogUserFormVisible = true">登录/注册</span>-->
+<!--        <span v-if="name == ''" class="v-link clickable" @click="showLogin()" id="loginDialog">登录/注册</span>-->
       </div>
     </div>
     <!-- 登录弹出层 -->
-    <el-dialog :visible.sync="dialogUserFormVisible" style="text-align: left;" top="50px" :append-to-body="true"
+    <el-dialog :visible.sync="dialogUserFormVisible"
+               style="text-align: left;display:none;" top="50px" :append-to-body="true"
                width="960px" @close="closeDialog()">
       <div class="container">
 
@@ -112,12 +119,10 @@
 <script>
 import cookie from 'js-cookie'
 import Vue from 'vue'
-import hospApi from "@/api/hosp/hospital";
-
-
 import userInfoApi from '@/api/user/userInfo'
 import smsApi from '@/api/msm/msm'
-import hospitalApi from '@/api/hosp/hospital'
+import weixinApi from '@/api/user/wexin'
+import hospApi from "@/api/hosp/hospital";
 
 const defaultDialogAtrr = {
   showLoginType: 'phone', // 控制手机登录与微信登录切换
@@ -137,12 +142,12 @@ const defaultDialogAtrr = {
 export default {
   data() {
     return {
-      state: '',
       userInfo: {
         phone: '',
         code: '',
         openid: ''
       },
+      state: "",
 
       dialogUserFormVisible: false,
       // 弹出层相关属性
@@ -155,6 +160,7 @@ export default {
   created() {
     this.showInfo()
   },
+
   mounted() {
     // 注册全局登录事件对象
     window.loginEvent = new Vue();
@@ -163,25 +169,38 @@ export default {
       document.getElementById("loginDialog").click();
     })
     // 触发事件，显示登录层：loginEvent.$emit('loginDialogEvent')
+    //初始化微信js
+    const script = document.createElement('script')
+    script.type = 'text/javascript'
+    script.src = 'https://res.wx.qq.com/connect/zh_CN/htmledition/js/wxLogin.js'
+    document.body.appendChild(script)
+
+    // 微信登录回调处理
+    let self = this;
+    window["loginCallback"] = (name, token, openid) => {
+      self.loginCallback(name, token, openid);
+    }
   },
 
-
   methods: {
-    querySearchAsync(queryString, cb) {
-      this.searchObj = []
-      if (queryString == '') return
-      hospApi.getByHosname(queryString).then(response => {
-        for (let i = 0, len = response.data.length; i < len; i++) {
-          response.data[i].value = response.data[i].hosname
-        }
-        cb(response.data)
-      })
+    loginCallback(name, token, openid) {
+      // 打开手机登录层，绑定手机号，改逻辑与手机登录一致
+      if (openid != null) {
+        console.log("openid不为空:", openid)
+        this.userInfo.openid = openid
+        this.showLogin()
+      } else {
+        console.log("openid:", openid)
+        this.setCookies(name, token)
+      }
     },
+
     // 绑定登录或获取验证码按钮
     btnClick() {
       // 判断是获取验证码还是登录
       if (this.dialogAtrr.loginBtn == '获取验证码') {
         this.userInfo.phone = this.dialogAtrr.inputValue
+
         // 获取验证码
         this.getCodeFun()
       } else {
@@ -201,6 +220,7 @@ export default {
     // 登录
     login() {
       this.userInfo.code = this.dialogAtrr.inputValue
+
       if (this.dialogAtrr.loginBtn == '正在提交...') {
         this.$message.error('重复提交')
         return;
@@ -223,6 +243,17 @@ export default {
       })
     },
 
+    //在输入框输入值，弹出下拉框，显示相关内容
+    querySearchAsync(queryString, cb) {
+      this.searchObj = []
+      if (queryString == '') return
+      hospApi.getByHosname(queryString).then(response => {
+        for (let i = 0, len = response.data.length; i < len; i++) {
+          response.data[i].value = response.data[i].hosname
+        }
+        cb(response.data)
+      })
+    },
     setCookies(name, token) {
       cookie.set('token', token, {domain: 'localhost'})
       cookie.set('name', name, {domain: 'localhost'})
@@ -315,13 +346,25 @@ export default {
 
     weixinLogin() {
       this.dialogAtrr.showLoginType = 'weixin'
+
+      weixinApi.getLoginParam().then(response => {
+        var obj = new WxLogin({
+          self_redirect: true,
+          id: 'weixinLogin', // 需要显示的容器id
+          appid: response.data.appid, // 公众号appid wx*******
+          scope: response.data.scope, // 网页默认即可
+          redirect_uri: response.data.redirect_url, // 授权成功后回调的url
+          state: response.data.state, // 可设置为简单的随机数加session用来校验
+          style: 'black', // 提供"black"、"white"可选。二维码的样式
+          href: '' // 外部css文件url，需要https
+        })
+      })
     },
 
     phoneLogin() {
       this.dialogAtrr.showLoginType = 'phone'
       this.showLogin()
-    },
-
+    }
   }
 }
 </script>

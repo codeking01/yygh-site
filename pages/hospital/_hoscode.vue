@@ -8,10 +8,12 @@
       :onclick="'javascript:window.location=\'/hospital/'+hospital.hoscode+'\''">预约挂号 </span>
       </div>
       <div class="nav-item ">
-        <span class="v-link clickable dark" :onclick="'javascript:window.location=\'/hospital/detail/'+hospital.hoscode+'\''"> 医院详情 </span>
+        <span class="v-link clickable dark"
+              :onclick="'javascript:window.location=\'/hospital/detail/'+hospital.hoscode+'\''"> 医院详情 </span>
       </div>
       <div class="nav-item">
-        <span class="v-link clickable dark" :onclick="'javascript:window.location=\'/hospital/notice/'+hospital.hoscode+'\''"> 预约须知 </span>
+        <span class="v-link clickable dark"
+              :onclick="'javascript:window.location=\'/hospital/notice/'+hospital.hoscode+'\''"> 预约须知 </span>
       </div>
       <div class="nav-item "><span
         class="v-link clickable dark"> 停诊信息 </span>
@@ -60,7 +62,10 @@
               <div class="dept-list-wrapper el-scrollbar" style="height: 100%;">
                 <div class="dept-list el-scrollbar__wrap" style="margin-bottom: -17px; margin-right: -17px;">
                   <div class="el-scrollbar__view">
-                    <div class="sub-item" v-for="(item,index) in departmentVoList" :key="item.id" :class="index == activeIndex ? 'selected' : ''" @click="move(index,item.depcode)"> {{ item.depname }}</div>
+                    <div class="sub-item" v-for="(item,index) in departmentVoList" :key="item.id"
+                         :class="index == activeIndex ? 'selected' : ''" @click="move(index,item.depcode)">
+                      {{ item.depname }}
+                    </div>
                   </div>
                 </div>
                 <div class="el-scrollbar__bar is-horizontal">
@@ -73,12 +78,15 @@
             </div>
           </div>
           <div class="sub-dept-container">
-            <div v-for="(item,index) in departmentVoList" :key="item.id" :class="index == 0 ? 'selected' : ''" class="sub-dept-wrapper" :id="item.depcode">
+            <div v-for="(item,index) in departmentVoList" :key="item.id" :class="index == 0 ? 'selected' : ''"
+                 class="sub-dept-wrapper" :id="item.depcode">
               <div class="sub-title">
-                <div class="block selected"></div>{{ item.depname }}
+                <div class="block selected"></div>
+                {{ item.depname }}
               </div>
               <div class="sub-item-wrapper">
-                <div v-for="it in item.children" :key="it.id" class="sub-item" @click="schedule(it.depcode)"><span class="v-link clickable">{{ it.depname }} </span></div>
+                <div v-for="it in item.children" :key="it.id" class="sub-item" @click="schedule(it.depcode)"><span
+                  class="v-link clickable">{{ it.depname }} </span></div>
               </div>
             </div>
           </div>
@@ -93,8 +101,10 @@
 <script>
 import '~/assets/css/hospital_personal.css'
 import '~/assets/css/hospital.css'
+import cookie from "js-cookie";
 
 import hospitalApi from '@/api/hosp/hospital'
+import userInfoApi from '@/api/user/userInfo'
 
 export default {
   data() {
@@ -105,8 +115,8 @@ export default {
       hospital: {
         param: {}
       },
-      bookingRule : {},
-      departmentVoList : []
+      bookingRule: {},
+      departmentVoList: []
     }
   },
   created() {
@@ -117,11 +127,14 @@ export default {
   methods: {
     init() {
       hospitalApi.show(this.hoscode).then(response => {
+        // debugger
         this.hospital = response.data.hospital
         this.bookingRule = response.data.bookingRule
       })
 
       hospitalApi.findDepartment(this.hoscode).then(response => {
+        // debugger
+        // console.log("findDepartment....",response.data)
         this.departmentVoList = response.data
       })
     },
@@ -132,6 +145,8 @@ export default {
     },
 
     schedule(depcode) {
+      // debugger
+      console.log("depcode",depcode)
       // 登录判断
       let token = cookie.get('token')
       if (!token) {
@@ -139,7 +154,16 @@ export default {
         loginEvent.$emit('loginDialogEvent')
         return
       }
-      window.location.href = '/hospital/schedule?hoscode=' + this.hospital.hoscode + "&depcode="+ depcode
+      //判断认证
+      userInfoApi.getUserInfo().then(response => {
+        let authStatus = response.data.authStatus
+        // 状态为2认证通过
+        if (!authStatus || authStatus != 2) {
+          window.location.href = '/user'
+          return
+        }
+      })
+      window.location.href = '/hospital/schedule?hoscode=' + this.hospital.hoscode + "&depcode=" + depcode
     },
 
   }
