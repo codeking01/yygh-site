@@ -101,6 +101,7 @@
 <script>
 import '~/assets/css/hospital_personal.css'
 import '~/assets/css/hospital.css'
+import cookie from "js-cookie";
 
 import hospitalApi from '@/api/hosp/hospital'
 import userInfoApi from '@/api/user/userInfo'
@@ -126,11 +127,14 @@ export default {
   methods: {
     init() {
       hospitalApi.show(this.hoscode).then(response => {
+        // debugger
         this.hospital = response.data.hospital
         this.bookingRule = response.data.bookingRule
       })
 
       hospitalApi.findDepartment(this.hoscode).then(response => {
+        // debugger
+        // console.log("findDepartment....",response.data)
         this.departmentVoList = response.data
       })
     },
@@ -141,6 +145,8 @@ export default {
     },
 
     schedule(depcode) {
+      // debugger
+      console.log("depcode",depcode)
       // 登录判断
       let token = cookie.get('token')
       if (!token) {

@@ -4,7 +4,9 @@
       <!-- logo -->
       <div class="left-wrapper v-link selected">
         <img style="width: 50px" width="50" height="50" src="~assets/images/logo.png">
-        <span class="text">尚医通 预约挂号统一平台</span>
+        <span class="text">
+        <a href="/" target="_self" style="text-decoration: none"> 尚医通 预约挂号统一平台</a>
+        </span>
       </div>
       <!-- 搜索框 -->
       <div class="search-wrapper">
@@ -119,7 +121,6 @@ import cookie from 'js-cookie'
 import Vue from 'vue'
 import userInfoApi from '@/api/user/userInfo'
 import smsApi from '@/api/msm/msm'
-import hospitalApi from '@/api/hosp/hospital'
 import weixinApi from '@/api/user/wexin'
 import hospApi from "@/api/hosp/hospital";
 
