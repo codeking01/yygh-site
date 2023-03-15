@@ -106,8 +106,8 @@
         <div class="operate-view" style="height: 350px;">
           <div class="wrapper wechat">
             <div>
-              <img src="images/weixin.jpg" alt="">
-
+<!--              <img src="images/weixin.jpg" alt="">-->
+              <qriously :value="payObj.codeUrl" :size="220"/>
               <div style="text-align: center;line-height: 25px;margin-bottom: 40px;">
                 请使用微信扫一扫<br/>
                 扫描二维码支付
@@ -124,7 +124,7 @@
 import '~/assets/css/hospital_personal.css'
 import '~/assets/css/hospital.css'
 import orderInfoApi from '@/api/order/orderInfo'
-
+import weixinApi from '@/api/order/weixin'
 export default {
   data() {
     return {
@@ -134,7 +134,7 @@ export default {
       },
       dialogPayVisible: false,
       payObj: {},
-      timer: null  // 定时器名称
+      timer: null,  // 定时器名称
     }
   },
   created() {
@@ -147,7 +147,54 @@ export default {
         console.log(response.data);
         this.orderInfo = response.data
       })
+    },
+    pay() {
+      this.dialogPayVisible = true
+      weixinApi.createNative(this.orderId).then(response => {
+        debugger
+        this.payObj = response.data
+        if(this.payObj.codeUrl == '') {
+          this.dialogPayVisible = false
+          this.$message.error("支付错误")
+        } else {
+          // 每隔三秒去查看一下支付状态
+          this.timer = setInterval(() => {
+            this.queryPayStatus(this.orderId)
+          }, 3000);
+        }
+      })
+    },
+    queryPayStatus(orderId) {
+      weixinApi.queryPayStatus(orderId).then(response => {
+        if (response.message == '支付中') {
+          return
+        }
+        clearInterval(this.timer);
+        window.location.reload()
+      })
+    },
+    closeDialog() {
+      if(this.timer) {
+        clearInterval(this.timer);
+      }
+    },
+    cancelOrder() {
+      this.$confirm('确定取消预约吗?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => { // promise
+        // 点击确定，远程调用
+        return weixinApi.cancelOrder(this.orderId)
+      }).then((response) => {
+        this.$message.success('取消成功')
+        this.init()
+      }).catch(() => {
+        this.$message.info('已取消取消预约')
+      })
     }
+
+
   }
 }
 </script>
